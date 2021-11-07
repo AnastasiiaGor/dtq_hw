@@ -1,0 +1,5 @@
+p6: 3.7M -- space for files, 6.9M -- consumed space in HDFS including replicas
+p7: corrupt blocks: 0
+    missed blocks: 0
+    number of data-nodes: 1
+    number of racks: 1
