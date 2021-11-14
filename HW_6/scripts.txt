@@ -1,0 +1,52 @@
+t1. create external table airports_external(AirportID int, Name string, City string, Country string, IATA string, ICAO string, Latituse float, Longitude float, Altitude float, Timezone float, DST string, DBtimezone string, Type string, Source string) 
+row format delimited 
+fields terminated by ',' 
+stored as textfile
+location '/user/airports'
+
+t2. create table airport_internal
+row format delimited
+fields terminated by '|'
+stored as textfile
+location '/user/hive/warehouse'
+as select airportid, name, city, country, timezone, dbtimezone from airports_external where iata is not null
+
+t3. create table airport_temp as select * from airport_internal
+
+create table airport_partitioned(airportid int, name string, city string, timezone float, dbtimezone float)
+partitioned by (country string)
+clustered by (city) into 4 buckets
+stored as sequencefile
+location '/user/hive/warehouse/airports_partitioned'
+
+set hive.enforce.bucketing = true;
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+SET hive.exec.max.dynamic.partitions.pernode=100000;
+
+INSERT OVERWRITE TABLE airport_partitioned PARTITION (country)
+SELECT airportid, name, city, country, timezone, dbtimezone FROM airport_temp;
+
+t4. insert into airport_partitioned partition(country="Unknown country") 
+values (123456, "zhaba", "zhaba", 1, 2)
+
+t5. create table airport_avro
+row format delimited
+fields terminated by '|'
+stored as avro
+location '/user/hive/warehouse/avro'
+as select * from airports_external
+
+create table airport_parquet
+row format delimited
+fields terminated by '|'
+stored as parquet
+location '/user/hive/warehouse/parquet'
+as select * from airports_external
+
+t7. 	
+CREATE EXTERNAL TABLE ipinyou_external (ip STRING, region_id INT, city INT)  
+ROW FORMAT SERDE 'org.apache.hadoop.hive.serde2.RegexSerDe'  
+WITH SERDEPROPERTIES ("input.regex"="^[^\\t]*\\t[^\\t]*\\t[^\\t]*\\t[^\\t]*\\t[^\\t]*\\t([^\\t]*)\\t(\\d+)\\t(\\d+).*")  
+STORED AS TEXTFILE LOCATION '/user/ipinyou'
+
